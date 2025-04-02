@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facebook Auto Poster</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        /* Custom styles that complement Tailwind */
+        .gradient-bg {
+            background: linear-gradient(135deg, #1a4fff 0%, #4fb4ff 100%);
+        }
+        .log-container {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .log-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        .log-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        .log-container::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        .log-container::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .shake {
+            animation: shake 0.3s ease-in-out;
+        }
+
+        @keyframes pulse-error {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.1); }
+        }
+
+        .error-icon {
+            animation: pulse-error 1.5s ease-in-out infinite;
+        }
+
+        .input-error {
+            border-color: #EF4444 !important;
+            background-color: #FEF2F2;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen font-['Roboto']">
+    <!-- Header Section -->
+    <header class="gradient-bg text-white py-8 px-4 shadow-lg">
+        <div class="container mx-auto">
+            <h1 class="text-4xl font-bold mb-2 flex items-center">
+                <i class="fab fa-facebook mr-4"></i>
+                Facebook Auto Poster
+            </h1>
+            <p class="text-lg opacity-90">Automatically post pictures to your Facebook page every hour</p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Configuration Panel -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-semibold mb-4 flex items-center">
+                <i class="fas fa-cog mr-3 text-blue-600"></i>
+                Configuration
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-2">
+                    <label class="block text-gray-700">Page ID</label>
+                    <div class="relative">
+                        <input type="text" id="pageId" placeholder="Enter your Facebook Page ID" 
+                               class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-400 focus:outline-none transition-colors">
+                        <div class="hidden absolute right-2 top-2 text-red-500 error-icon" id="pageIdError">
+                            <i class="fas fa-exclamation-circle"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <label class="block text-gray-700">Access Token</label>
+                    <div class="relative">
+                        <input type="password" id="accessToken" placeholder="Enter your Facebook Access Token" 
+                               class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-400 focus:outline-none transition-colors">
+                        <div class="hidden absolute right-2 top-2 text-red-500 error-icon" id="accessTokenError">
+                            <i class="fas fa-exclamation-circle"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview Panel -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-semibold mb-4 flex items-center">
+                <i class="fas fa-image mr-3 text-blue-600"></i>
+                Next Post Preview
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Image Preview -->
+                <div class="space-y-4">
+                    <div id="imagePreview" class="w-full h-64 bg-gray-200 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-image text-4xl text-gray-400"></i>
+                    </div>
+                    <p class="text-sm text-gray-500" id="selectedImage">No image selected</p>
+                </div>
+                <!-- Post Details -->
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-gray-700 mb-2">Post Title</label>
+                        <div id="postTitle" class="p-3 bg-gray-100 rounded">
+                            Picture Post of the Hour
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 mb-2">Hashtags</label>
+                        <div id="hashtags" class="p-3 bg-gray-100 rounded">
+                            #trending #viral #photography
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="flex flex-wrap gap-4 mb-8 justify-center">
+            <button id="startBtn" class="bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center text-lg shadow-lg hover:shadow-xl">
+                <i class="fas fa-play mr-3"></i>
+                Start Auto Posting
+            </button>
+            <button id="stopBtn" class="bg-red-600 text-white px-8 py-4 rounded-lg hover:bg-red-700 transition-colors flex items-center text-lg shadow-lg hover:shadow-xl" disabled>
+                <i class="fas fa-stop mr-3"></i>
+                Stop Auto Posting
+            </button>
+            <button id="postNowBtn" class="bg-green-600 text-white px-8 py-4 rounded-lg hover:bg-green-700 transition-colors flex items-center text-lg shadow-lg hover:shadow-xl">
+                <i class="fas fa-paper-plane mr-3"></i>
+                Post Now
+            </button>
+        </div>
+
+        <!-- Status Indicator -->
+        <div class="text-center mb-8">
+            <span id="statusIndicator" class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-gray-100">
+                <span class="w-2 h-2 rounded-full bg-gray-400 mr-2"></span>
+                Ready to post
+            </span>
+        </div>
+
+        <!-- Log Section -->
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-2xl font-semibold mb-4 flex items-center">
+                <i class="fas fa-list-alt mr-3 text-blue-600"></i>
+                Activity Log
+            </h2>
+            <div id="logContainer" class="log-container bg-gray-100 rounded-lg p-4 font-mono text-sm">
+                <!-- Logs will be inserted here -->
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Configuration
+        const POSTS_INTERVAL = 3600000; // 1 hour in milliseconds
+        let postingInterval = null;
+        const PICDOWNLOAD_FOLDER = 'PICDOWNLOAD/';
+
+        // Sample trending hashtags (in production, these could be fetched from an API)
+        const TRENDING_HASHTAGS = [
+            '#photography #naturephotography #photooftheday',
+            '#instagood #beautiful #picoftheday',
+            '#art #nature #instagram',
+            '#travel #photo #photographer',
+            '#love #fashion #beauty'
+        ];
+
+        // Sample image data URLs (in production, these would be actual image files)
+        const SAMPLE_IMAGES = [
+            'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAb/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=',
+            'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAb/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=',
+            'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAb/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k='
+        ];
+
+        // UI Elements
+        const pageIdInput = document.getElementById('pageId');
+        const accessTokenInput = document.getElementById('accessToken');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const postNowBtn = document.getElementById('postNowBtn');
+        const logContainer = document.getElementById('logContainer');
+        const postTitle = document.getElementById('postTitle');
+        const hashtags = document.getElementById('hashtags');
+        const imagePreview = document.getElementById('imagePreview');
+        const selectedImage = document.getElementById('selectedImage');
+        const statusIndicator = document.getElementById('statusIndicator');
+
+        // Update status indicator
+        function updateStatus(status, color) {
+            statusIndicator.className = `inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-${color}-100 transition-all transform hover:scale-105`;
+            statusIndicator.innerHTML = `
+                <span class="w-2 h-2 rounded-full bg-${color}-400 mr-2"></span>
+                ${status}
+            `;
+        }
+
+        // Utility Functions
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `mb-2 p-2 rounded ${type === 'error' ? 'bg-red-100 text-red-700' : 
+                                                     type === 'success' ? 'bg-green-100 text-green-700' : 
+                                                     'bg-blue-100 text-blue-700'}`;
+            logEntry.innerHTML = `[${timestamp}] ${message}`;
+            logContainer.insertBefore(logEntry, logContainer.firstChild);
+        }
+
+        function getTrendingHashtags() {
+            return TRENDING_HASHTAGS[Math.floor(Math.random() * TRENDING_HASHTAGS.length)];
+        }
+
+        function getTitle() {
+            const now = new Date();
+            return `Picture Post of the Hour - ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+        }
+
+        function pickPicture() {
+            if (SAMPLE_IMAGES.length === 0) {
+                throw new Error('No images available in the PICDOWNLOAD folder');
+            }
+            return SAMPLE_IMAGES[Math.floor(Math.random() * SAMPLE_IMAGES.length)];
+        }
+
+        async function postToFacebook() {
+            try {
+                // Validate inputs
+                const pageId = pageIdInput.value.trim();
+                const accessToken = accessTokenInput.value.trim();
+
+                // Reset error states
+                pageIdInput.classList.remove('border-red-500');
+                accessTokenInput.classList.remove('border-red-500');
+                document.getElementById('pageIdError').classList.add('hidden');
+                document.getElementById('accessTokenError').classList.add('hidden');
+
+                if (!pageId || !accessToken) {
+                    updateStatus('Missing credentials', 'red');
+                    if (!pageId) {
+                        pageIdInput.classList.add('input-error');
+                        document.getElementById('pageIdError').classList.remove('hidden');
+                    }
+                    if (!accessToken) {
+                        accessTokenInput.classList.add('input-error');
+                        document.getElementById('accessTokenError').classList.remove('hidden');
+                    }
+                    postNowBtn.classList.add('shake');
+                    setTimeout(() => postNowBtn.classList.remove('shake'), 500);
+                    throw new Error('Please enter both Page ID and Access Token');
+                }
+
+                // Validate image selection
+                const selectedPicture = pickPicture();
+                if (!selectedPicture) {
+                    updateStatus('No images available', 'red');
+                    throw new Error('No images available for posting');
+                }
+                const imageUrl = `${PICDOWNLOAD_FOLDER}${selectedPicture}`;
+                const title = getTitle();
+                const postHashtags = getTrendingHashtags();
+
+                // Update UI with new content
+                postTitle.textContent = title;
+                hashtags.textContent = postHashtags;
+                selectedImage.textContent = `Selected: ${selectedPicture.substring(0, 30)}...`;
+                imagePreview.innerHTML = `<img src="${selectedPicture}" class="max-h-full max-w-full object-contain rounded-lg">`;
+                
+                log('Updating preview with new image and details...', 'info');
+                
+                // In a real implementation, we would make an API call here
+                const apiUrl = `https://graph.facebook.com/${pageId}/photos`;
+                const postData = {
+                    url: imageUrl,
+                    caption: `${title}\n\n${postHashtags}`,
+                    access_token: accessToken
+                };
+
+                updateStatus('Posting to Facebook...', 'yellow');
+                log('Attempting to post to Facebook...', 'info');
+                
+                // Simulated API call (in production, use actual fetch)
+                setTimeout(() => {
+                    updateStatus('Posted successfully!', 'green');
+                    log('Successfully posted to Facebook!', 'success');
+                    // Pick next image for preview
+                    setTimeout(() => {
+                        const nextImage = pickPicture();
+                        imagePreview.innerHTML = `<img src="${nextImage}" class="max-h-full max-w-full object-contain rounded-lg">`;
+                        selectedImage.textContent = `Next: ${nextImage.substring(0, 30)}...`;
+                        log('Preview updated with next image', 'info');
+                    }, 500);
+                }, 1000);
+
+            } catch (error) {
+                log(error.message, 'error');
+                postNowBtn.classList.add('shake');
+                setTimeout(() => postNowBtn.classList.remove('shake'), 500);
+                throw error;
+            }
+        }
+
+        // Event Listeners
+        startBtn.addEventListener('click', () => {
+            try {
+                postToFacebook();
+                postingInterval = setInterval(postToFacebook, POSTS_INTERVAL);
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                log('Auto posting started', 'success');
+            } catch (error) {
+                log('Failed to start auto posting: ' + error.message, 'error');
+            }
+        });
+
+        stopBtn.addEventListener('click', () => {
+            clearInterval(postingInterval);
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            log('Auto posting stopped', 'info');
+        });
+
+        postNowBtn.addEventListener('click', async () => {
+            try {
+                await postToFacebook();
+                log('Manual post successful', 'success');
+            } catch (error) {
+                log('Manual post failed: ' + error.message, 'error');
+            }
+        });
+
+        // Initial status
+        updateStatus('Ready to post', 'gray');
+        log('System initialized and ready to start posting', 'info');
+
+        // Add input event listeners
+        pageIdInput.addEventListener('input', () => {
+            if (pageIdInput.value.trim() && accessTokenInput.value.trim()) {
+                updateStatus('Ready to post', 'blue');
+            } else {
+                updateStatus('Enter credentials', 'gray');
+            }
+        });
+
+        accessTokenInput.addEventListener('input', () => {
+            if (pageIdInput.value.trim() && accessTokenInput.value.trim()) {
+                updateStatus('Ready to post', 'blue');
+            } else {
+                updateStatus('Enter credentials', 'gray');
+            }
+        });
+    </script>
+</body>
+</html>
